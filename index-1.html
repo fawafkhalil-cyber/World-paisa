@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ur">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0f172a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="World Paisa">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>World Paisa</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(180deg,#0f172a,#14532d);min-height:100vh;color:white;font-family:Arial,sans-serif;text-align:center;padding:15px}
+h1{color:#facc15;font-size:30px;margin:5px}
+h3{color:#bbf7d0;margin:5px}
+.box{background:white;color:black;padding:20px;border-radius:25px;margin:15px auto;max-width:480px;box-shadow:0 10px 20px rgba(0,0,0,.5)}
+input{width:90%;padding:16px;font-size:22px;border-radius:12px;border:3px solid #22c55e;text-align:center}
+select{width:95%;padding:14px;font-size:18px;border-radius:12px;margin:8px;border:2px solid #0f172a}
+button{background:#22c55e;color:white;border:none;padding:16px 40px;font-size:22px;border-radius:15px;margin:10px;cursor:pointer}
+button.swap{background:#0f172a;padding:8px 22px;font-size:20px}
+.result{font-size:30px;color:#16a34a;font-weight:bold;margin:12px;word-break:break-word}
+.rate{font-size:16px;background:#dcfce7;padding:10px;border-radius:10px;min-height:20px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.card{background:#f0fdf4;padding:12px;border-radius:15px}
+#install{display:none;background:#facc15;color:#0f172a;font-weight:bold;font-size:20px}
+#ios{display:none;background:#fef9c3;color:#713f12;padding:12px;border-radius:12px;margin:10px auto;max-width:480px;font-size:15px}
+.status{font-size:14px;color:#bbf7d0}
+footer{margin:25px 0 10px;color:#facc15;font-size:16px;font-weight:bold}
+</style>
+</head>
+<body>
+<h1>💰 WORLD PAISA 💰</h1>
+<h3>🌍 Sab Malko Ka Paisa 🌍</h3>
+<p class="status" id="status">Internet Nahi Chahiye - Ye Offline Chalega!</p>
+
+<button id="install">📲 App Install Karo</button>
+<div id="ios">iPhone par install: Safari mein <b>Share</b> dabayein, phir <b>Add to Home Screen</b>.</div>
+
+<div class="box">
+<h2>🔄 Interchange Karo</h2>
+<input id="amount" type="number" inputmode="decimal" placeholder="Paisa likho - 100">
+<select id="from"></select>
+<button class="swap" onclick="swap()">⇅</button>
+<select id="to"></select>
+<button onclick="convert()">CONVERT KARO</button>
+<div class="result" id="res">Result Yahan Ayega</div>
+<div class="rate" id="rate"></div>
+</div>
+
+<div class="box">
+<h2>📊 Sab Rate - 1 Dollar Se</h2>
+<div class="grid" id="grid"></div>
+</div>
+
+<footer>Design by Mr Fawad</footer>
+
+<script>
+const cur=[
+["PKR","🇵🇰","Pakistan",280],["USD","🇺🇸","America Dollar",1],["EUR","🇪🇺","Europe Euro",0.92],
+["GBP","🇬🇧","England Pound",0.79],["AED","🇦🇪","Dubai Dirham",3.67],["SAR","🇸🇦","Saudi Riyal",3.75],
+["INR","🇮🇳","India Rupee",84],["CAD","🇨🇦","Canada Dollar",1.38],["AUD","🇦🇺","Australia Dollar",1.52],
+["KWD","🇰🇼","Kuwait Dinar",0.31],["QAR","🇶🇦","Qatar Riyal",3.64],["CNY","🇨🇳","China Yuan",7.24]
+];
+const rates={};cur.forEach(c=>rates[c[0]]=c[3]);
+const opts=cur.map(c=>`<option value="${c[0]}">${c[1]} ${c[0]} - ${c[2]}</option>`).join('');
+const fromEl=document.getElementById('from'),toEl=document.getElementById('to');
+fromEl.innerHTML=opts;toEl.innerHTML=opts;fromEl.value='USD';toEl.value='PKR';
+document.getElementById('grid').innerHTML=cur.map(c=>`<div class="card">${c[1]} ${c[0]}<br><b>${c[3]}</b></div>`).join('');
+
+function convert(){
+  const a=parseFloat(document.getElementById('amount').value);
+  const f=fromEl.value,t=toEl.value;
+  if(isNaN(a)){alert('Paisa likho!');return;}
+  const r=a/rates[f]*rates[t];
+  document.getElementById('res').innerText=r.toLocaleString(undefined,{maximumFractionDigits:2})+" "+t;
+  document.getElementById('rate').innerText="1 "+f+" = "+(rates[t]/rates[f]).toFixed(4)+" "+t;
+}
+function swap(){const x=fromEl.value;fromEl.value=toEl.value;toEl.value=x;if(document.getElementById('amount').value)convert();}
+document.getElementById('amount').addEventListener('keydown',e=>{if(e.key==='Enter')convert();});
+
+// Install
+let dp=null;
+const ib=document.getElementById('install');
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();dp=e;ib.style.display='inline-block';});
+ib.addEventListener('click',async()=>{if(!dp)return;dp.prompt();await dp.userChoice;dp=null;ib.style.display='none';});
+window.addEventListener('appinstalled',()=>{ib.style.display='none';});
+const isiOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
+const standalone=window.matchMedia('(display-mode: standalone)').matches||navigator.standalone;
+if(isiOS&&!standalone)document.getElementById('ios').style.display='block';
+
+// Offline
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});}
+</script>
+</body>
+</html>
