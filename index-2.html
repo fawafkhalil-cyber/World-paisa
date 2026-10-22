@@ -1,0 +1,501 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Zevlio Bank Demo</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Figtree:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a calm app shell. Landing = pitch + auth card; signed-in = top bar, tab row, one working panel at a time. Teal is the only accent; amber marks demo notices. */
+:root {
+  --bg: #F3F5F2;
+  --surface: #FFFFFF;
+  --surface-2: #E9EEEB;
+  --fg: #12201D;
+  --muted: #5B6B66;
+  --line: #D5DDD9;
+  --accent: #0B6B66;
+  --accent-ink: #FFFFFF;
+  --accent-soft: #D8EDEA;
+  --warn-bg: #FFF1CC;
+  --warn-fg: #5A4200;
+  --pos: #12794F;
+  --neg: #B3341E;
+  --font-display: "Outfit", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0C1513; --surface: #131E1B; --surface-2: #1B2925; --fg: #E6F0EC; --muted: #93A59F;
+    --line: #25362F; --accent: #4FC7BC; --accent-ink: #06201D; --accent-soft: #16332F;
+    --warn-bg: #3A2F0E; --warn-fg: #F6D98A; --pos: #5FD39C; --neg: #FF8D78; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0C1513; --surface: #131E1B; --surface-2: #1B2925; --fg: #E6F0EC; --muted: #93A59F;
+  --line: #25362F; --accent: #4FC7BC; --accent-ink: #06201D; --accent-soft: #16332F;
+  --warn-bg: #3A2F0E; --warn-fg: #F6D98A; --pos: #5FD39C; --neg: #FF8D78; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 16px; line-height: 1.55;
+  padding-block: 0 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 1040px; margin: 0 auto; }
+h1, h2, h3 { font-family: var(--font-display); margin: 0; line-height: 1.1; letter-spacing: -0.015em; text-wrap: balance; }
+p { margin: 0; }
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+.mono, .num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.label { font-family: var(--font-mono); font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.muted { color: var(--muted); }
+[hidden] { display: none !important; }
+
+.demo { background: var(--warn-bg); color: var(--warn-fg); font-size: 13.5px; padding: 8px 12px; border-radius: 0 0 10px 10px; text-align: center; }
+
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 18px 0; }
+.brand { font-family: var(--font-display); font-weight: 700; font-size: 22px; display: flex; align-items: center; gap: 10px; }
+.mark { width: 28px; height: 28px; border-radius: 8px; background: var(--accent); display: grid; place-items: center; }
+.mark svg { width: 16px; height: 16px; display: block; }
+.actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.pill { border: 1px solid var(--line); background: transparent; border-radius: 999px; padding: 6px 12px; font-family: var(--font-mono); font-size: 12px; letter-spacing: .04em; cursor: pointer; }
+.pill:hover { border-color: var(--accent); }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 11px 18px; font-weight: 600; cursor: pointer; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn:hover { border-color: var(--accent); }
+.btn.block { width: 100%; }
+
+/* landing */
+.hero { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 40px; padding: 24px 0 48px; align-items: start; }
+.hero h1 { font-size: clamp(38px, 7vw, 64px); font-weight: 700; margin-bottom: 18px; }
+.hero h1 em { font-style: normal; color: var(--accent); }
+.hero .lede { color: var(--muted); font-size: 18px; max-width: 46ch; margin-bottom: 24px; }
+.checks { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+.checks li { display: flex; gap: 10px; align-items: flex-start; }
+.checks svg { flex: none; width: 18px; height: 18px; margin-top: 3px; color: var(--accent); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 22px; }
+.tabs { display: flex; gap: 4px; background: var(--surface-2); border-radius: 10px; padding: 4px; margin-bottom: 18px; }
+.tabs button { flex: 1; border: 0; background: transparent; padding: 9px; border-radius: 8px; font-weight: 600; cursor: pointer; color: var(--muted); }
+.tabs button[aria-selected="true"] { background: var(--surface); color: var(--fg); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+form { display: grid; gap: 14px; }
+.field { display: grid; gap: 6px; min-width: 0; }
+.field label { font-size: 13.5px; font-weight: 600; }
+.field input, .field select {
+  width: 100%; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 11px 12px; min-width: 0;
+}
+.field input:focus, .field select:focus { border-color: var(--accent); outline: 2px solid var(--accent-soft); }
+.hint { font-size: 12.5px; color: var(--muted); }
+.err { color: var(--neg); font-size: 13.5px; min-height: 1em; }
+.row2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+
+.section { padding: 40px 0 0; }
+.section h2 { font-size: clamp(26px, 4vw, 34px); margin-bottom: 18px; }
+.grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+.grid3 > * { min-width: 0; }
+.grid3 h3 { font-size: 19px; margin-bottom: 6px; }
+.tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+table { width: 100%; border-collapse: collapse; font-size: 14.5px; }
+th, td { padding: 11px 14px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { font-family: var(--font-mono); font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+tr:last-child td { border-bottom: 0; }
+td.r, th.r { text-align: right; }
+
+/* app */
+.who { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+.avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; font-weight: 700; font-family: var(--font-display); }
+.nav { display: flex; gap: 6px; overflow-x: auto; border-bottom: 1px solid var(--line); margin-bottom: 24px; }
+.nav button { border: 0; background: transparent; padding: 12px 14px; font-weight: 600; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; }
+.nav button[aria-selected="true"] { color: var(--fg); border-bottom-color: var(--accent); }
+.total { display: flex; flex-direction: column; gap: 4px; margin-bottom: 24px; }
+.total .big { font-family: var(--font-display); font-size: clamp(36px, 7vw, 56px); font-weight: 700; letter-spacing: -0.02em; }
+.wallets { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; margin-bottom: 28px; }
+.wallet { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: grid; gap: 6px; min-width: 0; }
+.wallet .cur { font-family: var(--font-mono); font-size: 12px; color: var(--accent); font-weight: 500; letter-spacing: .06em; }
+.wallet .amt { font-family: var(--font-display); font-size: 24px; font-weight: 600; overflow-wrap: anywhere; }
+.qa { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 28px; }
+.list { list-style: none; margin: 0; padding: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
+.list li { display: flex; justify-content: space-between; gap: 16px; padding: 14px 16px; border-bottom: 1px solid var(--line); align-items: center; }
+.list li:last-child { border-bottom: 0; }
+.list .d { min-width: 0; }
+.list .d b { display: block; font-weight: 600; overflow-wrap: anywhere; }
+.list .d span { font-size: 13px; color: var(--muted); }
+.list .a { font-family: var(--font-mono); font-size: 14px; text-align: right; white-space: nowrap; }
+.pos { color: var(--pos); } .neg { color: var(--neg); }
+.panel { max-width: 560px; display: grid; gap: 16px; }
+.panel h2 { font-size: 28px; }
+.summary { background: var(--surface-2); border-radius: 12px; padding: 14px 16px; display: grid; gap: 8px; font-size: 14.5px; }
+.summary div { display: flex; justify-content: space-between; gap: 16px; }
+.summary div span:last-child { font-family: var(--font-mono); text-align: right; overflow-wrap: anywhere; }
+.summary .tot { border-top: 1px solid var(--line); padding-top: 8px; font-weight: 600; }
+.ok { background: var(--accent-soft); color: var(--accent); border-radius: 12px; padding: 16px; display: grid; gap: 6px; }
+.swap { justify-self: center; }
+
+@media (max-width: 760px) {
+  .hero { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+  .row2 { grid-template-columns: minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<style>html{color-scheme:light}body{margin:0}</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="demo" role="note">Demo bank. Balances, rates and people are samples. No real money moves and nothing you type leaves this page. Do not enter a real password.</div>
+
+  <div class="topbar">
+    <div class="brand">
+      <span class="mark" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M2 3h12L5 13h9" fill="none" stroke="var(--accent-ink)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      Zevlio Bank
+    </div>
+    <div class="actions">
+      <div class="who" id="who" hidden><span class="avatar" id="avatar"></span><span id="whoName"></span></div>
+      <button class="pill" id="signout" type="button" hidden>Sign out</button>
+      <button class="pill" id="theme" type="button" aria-label="Switch colour theme">Theme</button>
+    </div>
+  </div>
+
+  <!-- LANDING -->
+  <main id="landing">
+    <section class="hero">
+      <div>
+        <h1>Banking that moves money <em>across every border.</em></h1>
+        <p class="lede">Open an account in a minute. Hold money in many currencies, send it to people in any country, and exchange at clear rates.</p>
+        <ul class="checks">
+          <li><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5l4 4 8-9"/></svg><span>Wallets in 80+ currencies, one sign-in</span></li>
+          <li><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5l4 4 8-9"/></svg><span>Send to 100+ countries with the fee shown before you confirm</span></li>
+          <li><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5l4 4 8-9"/></svg><span>Exchange between currencies at 0.3%</span></li>
+          <li><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5l4 4 8-9"/></svg><span>Every payment listed in your activity feed</span></li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="tabs" role="tablist">
+          <button type="button" role="tab" id="tab-up" aria-selected="true">Sign up</button>
+          <button type="button" role="tab" id="tab-in" aria-selected="false">Sign in</button>
+        </div>
+        <form id="form-up" novalidate>
+          <div class="field"><label for="su-name">Full name</label><input id="su-name" autocomplete="name" placeholder="Your full name"></div>
+          <div class="field"><label for="su-email">Email</label><input id="su-email" type="email" autocomplete="email" placeholder="you@example.com"></div>
+          <div class="field"><label for="su-country">Country</label><select id="su-country"></select></div>
+          <div class="field"><label for="su-pass">Password</label><input id="su-pass" type="password" autocomplete="new-password" placeholder="At least 8 characters"><span class="hint">Demo only. Any password works and none is stored.</span></div>
+          <div class="err" id="su-err" role="alert"></div>
+          <button class="btn primary block" type="submit">Create account</button>
+        </form>
+        <form id="form-in" novalidate hidden>
+          <div class="field"><label for="si-email">Email</label><input id="si-email" type="email" autocomplete="email" placeholder="you@example.com"></div>
+          <div class="field"><label for="si-pass">Password</label><input id="si-pass" type="password" autocomplete="current-password" placeholder="Any password in this demo"></div>
+          <div class="err" id="si-err" role="alert"></div>
+          <button class="btn primary block" type="submit">Sign in</button>
+        </form>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>What you can do</h2>
+      <div class="grid3">
+        <div class="card"><h3>Hold</h3><p class="muted">Keep money in dollars, euros, rupees, dirhams and dozens more, each in its own wallet.</p></div>
+        <div class="card"><h3>Send</h3><p class="muted">Pick a country and the recipient's currency is chosen for you. You see what they receive first.</p></div>
+        <div class="card"><h3>Exchange</h3><p class="muted">Move money between your own wallets in seconds and see the rate you get.</p></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Sample rates</h2>
+      <div class="tablewrap"><table><thead><tr><th>Currency</th><th>Country</th><th class="r">Per 1 USD</th></tr></thead><tbody id="ratesBody"></tbody></table></div>
+      <p class="hint" style="margin-top:10px">Indicative sample rates for this demo. They are not live market rates.</p>
+    </section>
+  </main>
+
+  <!-- APP -->
+  <main id="app" hidden>
+    <div class="nav" role="tablist" id="nav">
+      <button type="button" role="tab" data-v="overview" aria-selected="true">Overview</button>
+      <button type="button" role="tab" data-v="send" aria-selected="false">Send money</button>
+      <button type="button" role="tab" data-v="exchange" aria-selected="false">Exchange</button>
+      <button type="button" role="tab" data-v="activity" aria-selected="false">Activity</button>
+    </div>
+
+    <section id="v-overview">
+      <div class="total"><span class="label">Total balance, USD equivalent</span><span class="big num" id="totalBal"></span></div>
+      <div class="qa"><button class="btn primary" data-go="send" type="button">Send money</button><button class="btn" data-go="exchange" type="button">Exchange</button></div>
+      <h3 style="font-size:20px;margin-bottom:12px">Your wallets</h3>
+      <div class="wallets" id="wallets"></div>
+      <h3 style="font-size:20px;margin-bottom:12px">Recent activity</h3>
+      <ul class="list" id="recent"></ul>
+    </section>
+
+    <section id="v-send" hidden>
+      <div class="panel">
+        <h2>Send money</h2>
+        <form id="form-send" novalidate>
+          <div class="field"><label for="sd-name">Recipient name</label><input id="sd-name" placeholder="Full name of the person or company"></div>
+          <div class="row2">
+            <div class="field"><label for="sd-country">Recipient country</label><select id="sd-country"></select></div>
+            <div class="field"><label for="sd-acct">Account or IBAN</label><input id="sd-acct" placeholder="Account number"></div>
+          </div>
+          <div class="row2">
+            <div class="field"><label for="sd-from">Pay from</label><select id="sd-from"></select></div>
+            <div class="field"><label for="sd-amt">Amount to send</label><input id="sd-amt" inputmode="decimal" placeholder="0.00"></div>
+          </div>
+          <div class="summary" id="sd-sum"></div>
+          <div class="err" id="sd-err" role="alert"></div>
+          <button class="btn primary block" type="submit">Review transfer</button>
+        </form>
+        <div id="sd-review" hidden></div>
+        <div id="sd-done" hidden></div>
+      </div>
+    </section>
+
+    <section id="v-exchange" hidden>
+      <div class="panel">
+        <h2>Exchange currency</h2>
+        <form id="form-ex" novalidate>
+          <div class="field"><label for="ex-from">From wallet</label><select id="ex-from"></select></div>
+          <div class="field"><label for="ex-amt">Amount</label><input id="ex-amt" inputmode="decimal" placeholder="0.00"></div>
+          <div class="field"><label for="ex-to">To currency</label><select id="ex-to"></select><span class="hint">A new wallet is created if you do not have one yet.</span></div>
+          <div class="summary" id="ex-sum"></div>
+          <div class="err" id="ex-err" role="alert"></div>
+          <button class="btn primary block" type="submit">Exchange now</button>
+        </form>
+        <div id="ex-done" hidden></div>
+      </div>
+    </section>
+
+    <section id="v-activity" hidden>
+      <h2 style="font-size:28px;margin-bottom:16px">Activity</h2>
+      <ul class="list" id="allTx"></ul>
+    </section>
+  </main>
+
+  <p class="hint" style="margin-top:40px">Zevlio Bank is a design prototype by Zevlio Studio. It is not a licensed bank and holds no money.</p>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+
+  /* Sample data: country:currency pairs, and sample units per 1 USD. */
+  var C = ('Afghanistan:AFN|Algeria:DZD|Argentina:ARS|Australia:AUD|Austria:EUR|Bahrain:BHD|Bangladesh:BDT|Belgium:EUR|Brazil:BRL|Bulgaria:BGN|Canada:CAD|Chile:CLP|China:CNY|Colombia:COP|Croatia:EUR|Czechia:CZK|Denmark:DKK|Egypt:EGP|Estonia:EUR|Ethiopia:ETB|Finland:EUR|France:EUR|Germany:EUR|Ghana:GHS|Greece:EUR|Hong Kong:HKD|Hungary:HUF|India:INR|Indonesia:IDR|Iraq:IQD|Ireland:EUR|Italy:EUR|Japan:JPY|Jordan:JOD|Kazakhstan:KZT|Kenya:KES|Kuwait:KWD|Malaysia:MYR|Mexico:MXN|Morocco:MAD|Nepal:NPR|Netherlands:EUR|New Zealand:NZD|Nigeria:NGN|Norway:NOK|Oman:OMR|Pakistan:PKR|Peru:PEN|Philippines:PHP|Poland:PLN|Portugal:EUR|Qatar:QAR|Romania:RON|Russia:RUB|Saudi Arabia:SAR|Singapore:SGD|South Africa:ZAR|South Korea:KRW|Spain:EUR|Sri Lanka:LKR|Sweden:SEK|Switzerland:CHF|Tanzania:TZS|Thailand:THB|Tunisia:TND|Turkey:TRY|Uganda:UGX|Ukraine:UAH|United Arab Emirates:AED|United Kingdom:GBP|United States:USD|Uruguay:UYU|Uzbekistan:UZS|Vietnam:VND').split('|').map(function (s) { var p = s.split(':'); return { country: p[0], cur: p[1] }; });
+  var R = { USD:1, EUR:.92, GBP:.78, PKR:280, INR:83.5, AED:3.6725, SAR:3.75, QAR:3.64, KWD:.307, BHD:.376, OMR:.385, JOD:.709, TRY:33, EGP:48, ZAR:18.5, NGN:1500, KES:129, GHS:15, MAD:10, TND:3.1, DZD:134, ETB:120, TZS:2600, UGX:3700, CAD:1.37, MXN:17.5, BRL:5.3, ARS:900, CLP:940, COP:4000, PEN:3.75, UYU:40, AUD:1.5, NZD:1.64, JPY:150, CNY:7.2, KRW:1350, HKD:7.8, SGD:1.34, MYR:4.5, THB:36, IDR:15800, PHP:57, VND:25000, BDT:118, LKR:300, NPR:133, CHF:.88, SEK:10.5, NOK:10.7, DKK:6.9, PLN:4, CZK:23, HUF:360, RON:4.6, BGN:1.8, RUB:92, UAH:40, KZT:470, UZS:12600, AFN:70, IQD:1310 };
+  var firstCountry = {};
+  C.forEach(function (c) { if (!firstCountry[c.cur] || c.cur === 'USD' && c.country === 'United States' || c.cur === 'EUR' && c.country === 'Germany') firstCountry[c.cur] = c.country; });
+  var CURS = Object.keys(R).sort();
+  var SEND_FEE = 0.005, EX_FEE = 0.003;
+
+  var state = { user: null, wallets: {}, tx: [] };
+
+  function load() {
+    try { var s = JSON.parse(localStorage.getItem('zevlio-demo-v1')); if (s && s.user) { state = s; return true; } } catch (e) {}
+    return false;
+  }
+  function save() { try { localStorage.setItem('zevlio-demo-v1', JSON.stringify(state)); } catch (e) {} }
+
+  function money(v, cur) {
+    try { return new Intl.NumberFormat('en-US', { style: 'currency', currency: cur, maximumFractionDigits: 2 }).format(v); }
+    catch (e) { return cur + ' ' + v.toFixed(2); }
+  }
+  function num(v) { return new Intl.NumberFormat('en-US', { maximumFractionDigits: 4 }).format(v); }
+  function esc(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+  function rate(from, to) { return R[to] / R[from]; }
+  function toUSD(v, cur) { return v / R[cur]; }
+  function parseAmt(s) { var n = parseFloat(String(s).replace(/,/g, '')); return isFinite(n) ? n : NaN; }
+  function dateStr(d) { return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }); }
+  function ref() { return 'ZV-' + Math.random().toString(36).slice(2, 8).toUpperCase(); }
+  function opts(arr) { return arr.map(function (o) { return '<option value="' + esc(o.v) + '">' + esc(o.t) + '</option>'; }).join(''); }
+
+  /* theme */
+  var root = document.documentElement;
+  try { var th = localStorage.getItem('zevlio-theme'); if (th === 'dark' || th === 'light') root.setAttribute('data-theme', th); } catch (e) {}
+  $('theme').addEventListener('click', function () {
+    var cur = root.getAttribute('data-theme');
+    var dark = cur ? cur === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+    var next = dark ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    try { localStorage.setItem('zevlio-theme', next); } catch (e) {}
+  });
+
+  /* landing content */
+  var countryOpts = opts(C.map(function (c) { return { v: c.country, t: c.country + ' (' + c.cur + ')' }; }));
+  $('su-country').innerHTML = countryOpts;
+  $('su-country').value = 'Pakistan';
+  $('sd-country').innerHTML = countryOpts;
+  $('sd-country').value = 'United Arab Emirates';
+  var topRates = ['EUR','GBP','PKR','INR','AED','SAR','CAD','JPY'];
+  $('ratesBody').innerHTML = topRates.map(function (c) { return '<tr><td class="mono">' + c + '</td><td>' + esc(firstCountry[c]) + '</td><td class="r mono">' + num(R[c]) + '</td></tr>'; }).join('');
+
+  function authTab(up) {
+    $('tab-up').setAttribute('aria-selected', up); $('tab-in').setAttribute('aria-selected', !up);
+    $('form-up').hidden = !up; $('form-in').hidden = up;
+  }
+  $('tab-up').addEventListener('click', function () { authTab(true); });
+  $('tab-in').addEventListener('click', function () { authTab(false); });
+
+  function validEmail(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
+
+  function startSession(user) {
+    var seeded = load();
+    if (!seeded || state.user.email !== user.email) {
+      var home = (C.filter(function (c) { return c.country === user.country; })[0] || { cur: 'USD' }).cur;
+      var now = new Date(), d = function (n) { var x = new Date(now); x.setDate(x.getDate() - n); return x.toISOString(); };
+      state = { user: user, wallets: { USD: 5000 }, tx: [
+        { id: ref(), date: d(0), desc: 'Welcome credit (demo)', cur: 'USD', amt: 5000, kind: 'in' }
+      ] };
+      if (home !== 'USD') state.wallets[home] = 0;
+    }
+    save(); showApp();
+  }
+
+  $('form-up').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var n = $('su-name').value.trim(), m = $('su-email').value.trim(), p = $('su-pass').value;
+    var err = !n ? 'Enter your full name.' : !validEmail(m) ? 'Enter a valid email address.' : p.length < 8 ? 'Use at least 8 characters for the password.' : '';
+    $('su-err').textContent = err; if (err) return;
+    state = { user: null, wallets: {}, tx: [] };
+    startSession({ name: n, email: m, country: $('su-country').value });
+  });
+  $('form-in').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var m = $('si-email').value.trim(), p = $('si-pass').value;
+    var err = !validEmail(m) ? 'Enter a valid email address.' : !p ? 'Enter your password.' : '';
+    $('si-err').textContent = err; if (err) return;
+    var had = load();
+    if (had && state.user.email === m) { showApp(); return; }
+    var nm = m.split('@')[0].replace(/[._-]+/g, ' ');
+    startSession({ name: nm.charAt(0).toUpperCase() + nm.slice(1), email: m, country: 'United States' });
+  });
+  $('signout').addEventListener('click', function () {
+    $('app').hidden = true; $('landing').hidden = false;
+    $('who').hidden = true; $('signout').hidden = true;
+    ['sd-done','sd-review','ex-done'].forEach(function (i) { $(i).hidden = true; });
+  });
+
+  /* app */
+  function showApp() {
+    $('landing').hidden = true; $('app').hidden = false;
+    $('who').hidden = false; $('signout').hidden = false;
+    $('whoName').textContent = state.user.name;
+    $('avatar').textContent = state.user.name.trim().charAt(0).toUpperCase() || 'Z';
+    renderAll(); go('overview');
+  }
+  function go(v) {
+    ['overview','send','exchange','activity'].forEach(function (k) { $('v-' + k).hidden = k !== v; });
+    Array.prototype.forEach.call($('nav').children, function (b) { b.setAttribute('aria-selected', b.getAttribute('data-v') === v); });
+    if (v === 'send') { $('form-send').hidden = false; $('sd-review').hidden = true; $('sd-done').hidden = true; sendSummary(); }
+    if (v === 'exchange') { $('form-ex').hidden = false; $('ex-done').hidden = true; exSummary(); }
+  }
+  $('nav').addEventListener('click', function (e) { var v = e.target.getAttribute && e.target.getAttribute('data-v'); if (v) go(v); });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-go]'), function (b) { b.addEventListener('click', function () { go(b.getAttribute('data-go')); }); });
+
+  function txHTML(t) {
+    var pos = t.amt >= 0;
+    return '<li><div class="d"><b>' + esc(t.desc) + '</b><span>' + dateStr(new Date(t.date)) + ' · ' + esc(t.id) + '</span></div><div class="a ' + (pos ? 'pos' : 'neg') + '">' + (pos ? '+' : '') + money(t.amt, t.cur) + '</div></li>';
+  }
+  function renderAll() {
+    var total = 0, w = state.wallets, keys = Object.keys(w);
+    keys.forEach(function (c) { total += toUSD(w[c], c); });
+    $('totalBal').textContent = money(total, 'USD');
+    $('wallets').innerHTML = keys.map(function (c) {
+      return '<div class="wallet"><span class="cur">' + c + '</span><span class="amt">' + money(w[c], c) + '</span><span class="hint">' + esc(firstCountry[c] || '') + ' wallet</span></div>';
+    }).join('');
+    $('recent').innerHTML = state.tx.slice(0, 5).map(txHTML).join('') || '<li><span class="muted">No activity yet.</span></li>';
+    $('allTx').innerHTML = state.tx.map(txHTML).join('') || '<li><span class="muted">No activity yet.</span></li>';
+    var wopts = opts(keys.map(function (c) { return { v: c, t: c + ' · ' + money(w[c], c) }; }));
+    var sf = $('sd-from').value, ef = $('ex-from').value;
+    $('sd-from').innerHTML = wopts; $('ex-from').innerHTML = wopts;
+    if (sf && w[sf] !== undefined) $('sd-from').value = sf;
+    if (ef && w[ef] !== undefined) $('ex-from').value = ef;
+    var et = $('ex-to').value;
+    $('ex-to').innerHTML = opts(CURS.map(function (c) { return { v: c, t: c + ' · ' + (firstCountry[c] || '') }; }));
+    $('ex-to').value = et || (keys.indexOf('PKR') < 0 && !w.PKR ? 'PKR' : 'EUR');
+    save();
+  }
+
+  /* send money */
+  var pending = null;
+  function sendCalc() {
+    var from = $('sd-from').value, c = $('sd-country').value;
+    var to = (C.filter(function (x) { return x.country === c; })[0] || { cur: 'USD' }).cur;
+    var amt = parseAmt($('sd-amt').value);
+    if (!from) return null;
+    var r = rate(from, to);
+    var fee = isFinite(amt) ? Math.max(amt * SEND_FEE, 1 * R[from]) : 0;
+    return { from: from, to: to, country: c, amt: amt, fee: fee, rate: r, recv: isFinite(amt) ? amt * r : NaN };
+  }
+  function sendSummary() {
+    var s = sendCalc(); if (!s) { $('sd-sum').innerHTML = ''; return; }
+    $('sd-sum').innerHTML =
+      '<div><span>Exchange rate</span><span>1 ' + s.from + ' = ' + num(s.rate) + ' ' + s.to + '</span></div>' +
+      '<div><span>Fee (0.5%, min. 1 USD)</span><span>' + (isFinite(s.amt) ? money(s.fee, s.from) : '-') + '</span></div>' +
+      '<div class="tot"><span>Recipient gets</span><span>' + (isFinite(s.recv) ? money(s.recv, s.to) : '-') + '</span></div>';
+  }
+  ['sd-from','sd-country','sd-amt'].forEach(function (i) { $(i).addEventListener('input', sendSummary); });
+  $('form-send').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var s = sendCalc(), name = $('sd-name').value.trim(), acct = $('sd-acct').value.trim();
+    var err = !name ? 'Enter the recipient name.' : !acct ? 'Enter the recipient account or IBAN.' : !isFinite(s.amt) || s.amt <= 0 ? 'Enter an amount greater than zero.' : (s.amt + s.fee) > state.wallets[s.from] + 1e-9 ? 'Not enough balance in the ' + s.from + ' wallet. You need ' + money(s.amt + s.fee, s.from) + '.' : '';
+    $('sd-err').textContent = err; if (err) return;
+    pending = { s: s, name: name, acct: acct };
+    $('form-send').hidden = true;
+    var r = $('sd-review'); r.hidden = false;
+    r.innerHTML = '<h3 style="font-size:22px;margin-bottom:12px">Review your transfer</h3><div class="summary">' +
+      '<div><span>To</span><span>' + esc(name) + '</span></div>' +
+      '<div><span>Country</span><span>' + esc(s.country) + '</span></div>' +
+      '<div><span>Account</span><span>' + esc(acct) + '</span></div>' +
+      '<div><span>You send</span><span>' + money(s.amt, s.from) + '</span></div>' +
+      '<div><span>Fee</span><span>' + money(s.fee, s.from) + '</span></div>' +
+      '<div class="tot"><span>Recipient gets</span><span>' + money(s.recv, s.to) + '</span></div></div>' +
+      '<div class="row2" style="margin-top:16px"><button class="btn" id="sd-back" type="button">Back</button><button class="btn primary" id="sd-go" type="button">Confirm and send</button></div>';
+    $('sd-back').addEventListener('click', function () { r.hidden = true; $('form-send').hidden = false; });
+    $('sd-go').addEventListener('click', function () {
+      var p = pending.s, id = ref();
+      state.wallets[p.from] -= (p.amt + p.fee);
+      state.tx.unshift({ id: id, date: new Date().toISOString(), desc: 'Sent to ' + pending.name + ' (' + p.country + ')', cur: p.from, amt: -(p.amt + p.fee), kind: 'out' });
+      renderAll(); r.hidden = true;
+      var d = $('sd-done'); d.hidden = false;
+      d.innerHTML = '<div class="ok"><b>Transfer sent</b><span>' + esc(pending.name) + ' receives ' + money(p.recv, p.to) + ' in ' + esc(p.country) + '. Reference ' + esc(id) + '.</span></div><div style="margin-top:14px"><button class="btn" id="sd-new" type="button">Send another</button></div>';
+      $('sd-new').addEventListener('click', function () { $('sd-amt').value = ''; $('sd-name').value = ''; $('sd-acct').value = ''; go('send'); });
+    });
+  });
+
+  /* exchange */
+  function exCalc() {
+    var from = $('ex-from').value, to = $('ex-to').value, amt = parseAmt($('ex-amt').value);
+    if (!from) return null;
+    var r = rate(from, to);
+    return { from: from, to: to, amt: amt, rate: r, fee: isFinite(amt) ? amt * EX_FEE : 0, get: isFinite(amt) ? amt * (1 - EX_FEE) * r : NaN };
+  }
+  function exSummary() {
+    var x = exCalc(); if (!x) { $('ex-sum').innerHTML = ''; return; }
+    $('ex-sum').innerHTML =
+      '<div><span>Rate</span><span>1 ' + x.from + ' = ' + num(x.rate) + ' ' + x.to + '</span></div>' +
+      '<div><span>Fee (0.3%)</span><span>' + (isFinite(x.amt) ? money(x.fee, x.from) : '-') + '</span></div>' +
+      '<div class="tot"><span>You get</span><span>' + (isFinite(x.get) ? money(x.get, x.to) : '-') + '</span></div>';
+  }
+  ['ex-from','ex-to','ex-amt'].forEach(function (i) { $(i).addEventListener('input', exSummary); });
+  $('form-ex').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var x = exCalc();
+    var err = x.from === x.to ? 'Choose a different currency to exchange into.' : !isFinite(x.amt) || x.amt <= 0 ? 'Enter an amount greater than zero.' : x.amt > state.wallets[x.from] + 1e-9 ? 'Not enough balance in the ' + x.from + ' wallet.' : '';
+    $('ex-err').textContent = err; if (err) return;
+    var id = ref();
+    state.wallets[x.from] -= x.amt;
+    state.wallets[x.to] = (state.wallets[x.to] || 0) + x.get;
+    state.tx.unshift({ id: id, date: new Date().toISOString(), desc: 'Exchange to ' + x.to, cur: x.from, amt: -x.amt, kind: 'ex' });
+    state.tx.unshift({ id: id, date: new Date().toISOString(), desc: 'Exchange from ' + x.from, cur: x.to, amt: x.get, kind: 'ex' });
+    renderAll(); $('ex-amt').value = '';
+    $('form-ex').hidden = true; var d = $('ex-done'); d.hidden = false;
+    d.innerHTML = '<div class="ok"><b>Exchange complete</b><span>You exchanged ' + money(x.amt, x.from) + ' for ' + money(x.get, x.to) + '. Reference ' + esc(id) + '.</span></div><div style="margin-top:14px"><button class="btn" id="ex-new" type="button">Exchange again</button></div>';
+    $('ex-new').addEventListener('click', function () { go('exchange'); });
+  });
+
+  if (load()) { $('si-email').value = state.user.email; authTab(false); }
+})();
+</script>
+
+</body>
+</html>
